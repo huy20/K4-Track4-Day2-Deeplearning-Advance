@@ -289,7 +289,7 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(rc, 0, out)
         self.assertIn("I1", out)
         self.assertIn("Tổng các ý đã chấm", out)
-        report = json.loads((self.dir / "out" / "grade_I.json").read_text())
+        report = json.loads((self.dir / "out" / "grade_I.json").read_text(encoding="utf-8"))
         items = {i["code"]: i for i in report["items"]}
         self.assertEqual(items["I2"]["points"], 5)    # mốc yếu hơn rõ rệt
         self.assertEqual(items["I4a"]["points"], 1)   # ECE sau < trước
@@ -304,7 +304,7 @@ class TestCLI(unittest.TestCase):
                               "--uncal", str(self.dir / "F01uncal_seed*_test.csv"),
                               "--out", str(self.dir / "out")])
         self.assertEqual(rc, 0)
-        report = json.loads((self.dir / "out" / "grade_I.json").read_text())
+        report = json.loads((self.dir / "out" / "grade_I.json").read_text(encoding="utf-8"))
         items = {i["code"]: i for i in report["items"]}
         self.assertEqual(items["I4a"]["points"], 0)
 
