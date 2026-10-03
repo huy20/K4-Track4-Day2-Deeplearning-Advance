@@ -10,13 +10,18 @@ from pathlib import Path
 cells: list[dict] = []
 
 
+def _source(src: str) -> list[str]:
+    return src.splitlines(keepends=True)
+
+
 def md(src: str) -> None:
-    cells.append({"cell_type": "markdown", "metadata": {}, "source": src})
+    cells.append({"cell_type": "markdown", "id": f"cell{len(cells):03d}", "metadata": {},
+                  "source": _source(src)})
 
 
 def code(src: str) -> None:
-    cells.append({"cell_type": "code", "metadata": {}, "execution_count": None,
-                  "outputs": [], "source": src})
+    cells.append({"cell_type": "code", "id": f"cell{len(cells):03d}", "metadata": {},
+                  "execution_count": None, "outputs": [], "source": _source(src)})
 
 
 md(r"""# Lab Day 2 — Backbone, công thức huấn luyện và suy luận trên DeepWeeds
@@ -47,6 +52,8 @@ from pathlib import Path
 
 PROJECT_OVERRIDE = None  # ví dụ: '/content/drive/MyDrive/Lab/K4-Track4-Day2-Deeplearning-Advance'
 PROJECT_NAME = "K4-Track4-Day2-Deeplearning-Advance"
+REPO_URL = "https://github.com/huy20/K4-Track4-Day2-Deeplearning-Advance.git"
+GITHUB_TOKEN = ""  # chỉ điền nếu repo private (đừng commit token)
 
 IN_COLAB = False
 try:
@@ -67,11 +74,13 @@ candidates += [
 ]
 PROJECT = next((p for p in candidates if (p / "eval.py").exists()), None)
 if PROJECT is None:
-    print("Các vị trí đã thử:", [str(c) for c in candidates])
-    raise SystemExit(
-        "Không tìm thấy project. Hãy upload zip repo lên Colab và giải nén vào /content, "
-        "hoặc đặt thư mục project trong MyDrive rồi đặt PROJECT_OVERRIDE."
-    )
+    # Tự clone từ GitHub vào /content (repo public, hoặc điền GITHUB_TOKEN nếu private)
+    url = REPO_URL
+    if GITHUB_TOKEN:
+        url = url.replace("https://", f"https://{GITHUB_TOKEN}@")
+    print("Chưa có project, đang git clone", REPO_URL, "...")
+    subprocess.run(["git", "clone", url, f"/content/{PROJECT_NAME}"], check=True)
+    PROJECT = Path("/content") / PROJECT_NAME
 os.chdir(PROJECT)
 sys.path.insert(0, str(PROJECT))
 sys.path.insert(0, str(PROJECT / "code"))
