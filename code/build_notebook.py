@@ -82,6 +82,9 @@ if PROJECT is None:
     subprocess.run(["git", "clone", url, f"/content/{PROJECT_NAME}"], check=True)
     PROJECT = Path("/content") / PROJECT_NAME
 os.chdir(PROJECT)
+# Tránh thư mục code/ (nếu có __init__.py) che module 'code' chuẩn của Python
+(PROJECT / "code" / "__init__.py").unlink(missing_ok=True)
+sys.modules.pop("code", None)
 sys.path.insert(0, str(PROJECT))
 sys.path.insert(0, str(PROJECT / "code"))
 print("PROJECT =", PROJECT)

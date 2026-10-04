@@ -25,6 +25,7 @@ import math
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 import numpy as np
@@ -256,6 +257,7 @@ def stage_backbones(args) -> list[dict]:
             results.append(res)
         except Exception as e:  # noqa: BLE001
             print(f"[FAIL] {spec['exp_id']}: {type(e).__name__}: {e}")
+            traceback.print_exc()
     return results
 
 
@@ -284,6 +286,7 @@ def stage_training(args) -> list[dict]:
             results.append(res)
         except Exception as e:  # noqa: BLE001
             print(f"[FAIL] {spec['exp_id']}: {type(e).__name__}: {e}")
+            traceback.print_exc()
     return results
 
 
