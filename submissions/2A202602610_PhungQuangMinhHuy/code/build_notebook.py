@@ -63,41 +63,24 @@ try:
 except Exception as e:  # Kaggle / local
     print("Không chạy được google.colab.drive (bình thường trên Kaggle/local):", e)
 
-ON_KAGGLE = Path("/kaggle").exists()
-WORK = Path("/kaggle/working") if ON_KAGGLE else Path("/content")
-print("Môi trường:", "Kaggle" if ON_KAGGLE else ("Colab" if IN_COLAB else "local"), "| WORK =", WORK)
-
 candidates = []
 if PROJECT_OVERRIDE:
     candidates.append(Path(PROJECT_OVERRIDE))
 candidates += [
-    WORK / PROJECT_NAME,
     Path("/content/drive/MyDrive") / PROJECT_NAME,
     Path("/content/drive/MyDrive/Lab") / PROJECT_NAME,
     Path("/content") / PROJECT_NAME,
     Path.cwd(),
-    Path.cwd() / PROJECT_NAME,
 ]
-# Kaggle: nếu đã Add Data một dataset chứa repo (có eval.py), tìm trong /kaggle/input
-if ON_KAGGLE and Path("/kaggle/input").exists():
-    for pat in ("*/eval.py", "*/*/eval.py"):
-        for p in sorted(Path("/kaggle/input").glob(pat)):
-            candidates.append(p.parent)
 PROJECT = next((p for p in candidates if (p / "eval.py").exists()), None)
-if PROJECT is not None and str(PROJECT).startswith("/kaggle/input"):
-    # /kaggle/input chỉ đọc -> copy sang /kaggle/working để ghi được kết quả
-    dest = WORK / PROJECT_NAME
-    if not dest.exists():
-        shutil.copytree(PROJECT, dest, ignore=shutil.ignore_patterns("*.zip", "*.pt", "images"))
-    PROJECT = dest
 if PROJECT is None:
-    # Tự clone từ GitHub (repo public, hoặc điền GITHUB_TOKEN nếu private)
+    # Tự clone từ GitHub vào /content (repo public, hoặc điền GITHUB_TOKEN nếu private)
     url = REPO_URL
     if GITHUB_TOKEN:
         url = url.replace("https://", f"https://{GITHUB_TOKEN}@")
-    print("Chưa có project, đang git clone", REPO_URL, "->", WORK / PROJECT_NAME)
-    subprocess.run(["git", "clone", url, str(WORK / PROJECT_NAME)], check=True)
-    PROJECT = WORK / PROJECT_NAME
+    print("Chưa có project, đang git clone", REPO_URL, "...")
+    subprocess.run(["git", "clone", url, f"/content/{PROJECT_NAME}"], check=True)
+    PROJECT = Path("/content") / PROJECT_NAME
 os.chdir(PROJECT)
 # Tránh thư mục code/ (nếu có __init__.py) che module 'code' chuẩn của Python
 (PROJECT / "code" / "__init__.py").unlink(missing_ok=True)
@@ -124,18 +107,6 @@ IMAGES = PROJECT / "images"
 
 def count_imgs():
     return len(list(IMAGES.glob("*.jpg"))) if IMAGES.exists() else 0
-
-# Trên Kaggle: nếu đã Add Data một dataset DeepWeeds có thư mục images/ thì dùng luôn, khỏi tải
-if ON_KAGGLE and count_imgs() < 17000 and Path("/kaggle/input").exists():
-    for cand in sorted(Path("/kaggle/input").glob("*/images")):
-        if len(list(cand.glob("*.jpg"))) >= 17000:
-            if IMAGES.is_symlink():
-                IMAGES.unlink()
-            elif IMAGES.exists():
-                shutil.rmtree(IMAGES, ignore_errors=True)
-            IMAGES.symlink_to(cand)
-            print("Dùng ảnh từ Kaggle input:", cand)
-            break
 
 if count_imgs() < 17000:
     zip_path = PROJECT / "images.zip"
@@ -210,7 +181,7 @@ md("## 7. Lưu sản phẩm ra Google Drive (không lưu checkpoint lớn)")
 code(r"""if IN_COLAB:
     OUT = Path("/content/drive/MyDrive") / (PROJECT_NAME + "_output")
 else:
-    OUT = WORK / "submission"
+    OUT = PROJECT / "submission"
 OUT.mkdir(parents=True, exist_ok=True)
 ignore = shutil.ignore_patterns("*.pt", "*.pth", "*.ckpt", "*.zip", "*.jpg")
 for item in ["results.xlsx", "report.md", "curves", "predictions", "eval_out", "runs", "code"]:
